@@ -1,11 +1,11 @@
 const SHOPIFY_SHOP = Deno.env.get("SHOPIFY_SHOP") || 'none';
 const SHOPIFY_ACCESS_TOKEN = Deno.env.get("SHOPIFY_ACCESS_TOKEN" || '12345');
 
-if (SHOPIFY_SHOP === undefined || SHOPIFY_ACCESS_TOKEN === undefined) {
+/* if (SHOPIFY_SHOP === undefined || SHOPIFY_ACCESS_TOKEN === undefined) {
   throw new Error(
     "env `SHOPIFY_SHOP` and `SHOPIFY_ACCESS_TOKEN` must be set",
   );
-}
+} */
 
 export async function graphql<T>(
   query: string,
