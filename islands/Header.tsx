@@ -1,9 +1,15 @@
-import Cart from "../islands/Cart.tsx";
+import { useEffect } from "preact/hooks";
+import Cart from "./Cart.tsx";
+import { overwriteCart } from "@/utils/cart.ts";
 
 export function Header() {
+  useEffect(() => {
+    overwriteCart()
+  },[])
+  
   return (
     <header
-      class="h-[110px] sm:!h-[144px] w-full bg-cover bg-no-repeat relative"
+      class="h-[110px] sm:!h-[144px] w-full bg-cover bg-no-repeat fixed top-0 z-[999]"
       style={{
         backgroundImage: "url(/header_bg.svg)",
       }}
@@ -18,13 +24,7 @@ export function Header() {
           />
         </a>
         <h1>
-          <img
-            src="/text_logo.svg"
-            alt="Deno Merch"
-            class="h-6"
-            width="130"
-            height="24"
-          />
+          
         </h1>
         <Cart />
       </nav>

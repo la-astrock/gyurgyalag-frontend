@@ -5,9 +5,10 @@ import { formatCurrency } from "@/utils/data.ts";
 import { graphql } from "@/utils/shopify.ts";
 import { Footer } from "@/components/Footer.tsx";
 import { HeadElement } from "@/components/HeadElement.tsx";
-import { Header } from "@/components/Header.tsx";
+import { Header } from "../islands/Header.tsx";
 import IconCart from "@/components/IconCart.tsx";
 import { List, Product } from "../utils/types.ts";
+
 
 const q = `{
   products(first: 20) {
@@ -39,23 +40,23 @@ interface Data {
 
 export const handler: Handlers<Data> = {
   async GET(_req, ctx) {
-    const data = await graphql<Data>(q);
-    return ctx.render(data);
+    const data = await fetch('http://192.168.0.14:8000/getcategorieswithproducts')
+    return ctx.render(await data.json());
   },
 };
 
 export default function Home(ctx: PageProps<Data>) {
   const { data, url } = ctx;
-  const products = data.products.nodes;
+  const categoryProducts = data
   return (
     <div>
       <HeadElement
         description="Shop for Deno Merch"
         image={url.href + "og-image.png"}
-        title="Deno Merch"
+        title="Gyurgyalag Falatozó"
         url={url}
       />
-      <Header />
+     
       <div
         class="w-11/12 max-w-5xl mx-auto mt-28"
         aria-labelledby="information-heading"
@@ -63,10 +64,23 @@ export default function Home(ctx: PageProps<Data>) {
         <h2 id="information-heading" class="sr-only">
           Product List
         </h2>
+
+        <div class="mt-[11rem]">
+          { categoryProducts.map((category) => (
+            <>
+            { category.products && category.products.records && <div class="text-3xl mb-4 font-extrabold leading-none tracking-tight text-gray-900 md:text-3xl lg:text-5xl">{category.name}</div>}
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              
+              {category.products && category.products.records && category.products.records.map((product) => (
+                 <ProductCard product={product} /> 
+              ))}
+            </div>
+            </>
+          ))}
+        </div>
         <div
           class="grid grid-cols-1 gap-8 sm:!gap-x-10 sm:!grid-cols-2 lg:!grid-cols-3 lg:!gap-x-12 lg:!gap-y-10"
         >
-          {products.map((product) => <ProductCard product={product} />)}
         </div>
       </div>
       <Footer />
@@ -74,19 +88,19 @@ export default function Home(ctx: PageProps<Data>) {
   );
 }
 
-function ProductCard(props: { product: Product }) {
-  const { product } = props;
+function ProductCard({product}) {
+  
   return (
-    <a key={product.id} href={`/products/${product.handle}`} class="group">
+    <a key={product.id} href={`/products/${product.id}`} class="group">
       <div
         class={tw`${
           aspectRatio(1, 1)
         } w-full bg-white rounded-xl overflow-hidden border-2 border-gray-200 transition-all duration-500 relative`}
       >
-        {product.featuredImage && (
+        {product.product_image.storageKey && (
           <img
-            src={product.featuredImage.url}
-            alt={product.featuredImage.altText}
+            src={`https://eu-central-1.storage.xata.sh/${product.product_image.storageKey}`}
+            alt={product.name}
             width="400"
             height="400"
             class="w-full h-full object-center object-contain absolute block"
@@ -100,13 +114,13 @@ function ProductCard(props: { product: Product }) {
       </div>
       <div class="flex items-center justify-between mt-3">
         <h3 class="text-lg text-gray-800 font-medium relative">
-          {product.title}
+          {product.name}
           <span
             class="bg-gray-800 h-[3px] w-0 group-hover:!w-full absolute bottom-[-2px] left-0 transition-all duration-400"
           />
         </h3>
         <strong class="text-lg font-bold text-gray-800">
-          {formatCurrency(product.priceRange.minVariantPrice)}
+          {formatCurrency({amount: product.price, currencyCode: 'HUF'})}
         </strong>
       </div>
     </a>

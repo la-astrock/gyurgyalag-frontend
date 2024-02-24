@@ -1,14 +1,12 @@
-import { useRef } from "preact/hooks";
+import { useEffect, useRef, useState } from "preact/hooks";
 import { IS_BROWSER } from "$fresh/runtime.ts";
 import { apply, tw } from "twind";
 import { animation, css } from "twind/css";
 import IconCart from "@/components/IconCart.tsx";
-import {
-  CartData,
-  formatCurrency,
-  removeFromCart,
-  useCart,
-} from "@/utils/data.ts";
+import { addToCart, cart, cartQuantity, getCartQuantity, cartContent, removeFromCart, changeQuantity } from "@/utils/cart.ts";
+import { h } from 'preact'
+import { useSignal } from "@preact/signals";
+import { ChevronUpCircle, ChevronDownCircle } from "lucide"
 
 // Lazy load a <dialog> polyfill.
 // @ts-expect-error HTMLDialogElement is not just a type!
@@ -42,19 +40,32 @@ const backdrop = css({
 });
 
 export default function Cart() {
-  const { data, error } = useCart();
 
   const ref = useRef<HTMLDialogElement | null>(null);
+  const [state, setState] = useState(null)
+
+  const getProductQuantity = () => {
+    const totalQuantity = cart.value.reduce((accumulator, object) => {
+        return accumulator + object.quantity
+      }, 0);
+      return totalQuantity
+}
+
+const uniqueProductArray = (prodArray) => {
+ if (prodArray.length !== 0) {
+  const unique = prodArray
+  .map((item) => item.productId)
+  .filter((value, index, self) => self.indexOf(value) === index);
+  return unique 
+ }
+}
+
 
   const onDialogClick = (e: MouseEvent) => {
     if ((e.target as HTMLDialogElement).tagName === "DIALOG") {
       ref.current!.close();
     }
   };
-
-  if (error) {
-    return <div>Error: {error.message}</div>;
-  }
 
   return (
     <div>
@@ -63,42 +74,41 @@ export default function Cart() {
         class="flex items-center gap-2 items-center border-2 border-gray-800 rounded-full px-5 py-1 font-semibold text-gray-800 hover:bg-gray-800 hover:text-white transition-colors duration-300"
       >
         <IconCart />
-        {data?.lines.nodes.length ?? "0"}
+        {getCartQuantity ? getCartQuantity : 0}
       </button>
       <dialog
         ref={ref}
         class={tw`bg-transparent p-0 m-0 pt-[50%] sm:pt-0 sm:ml-auto max-w-full sm:max-w-lg w-full max-h-full h-full ${slideBottom} sm:${slideRight} ${backdrop}`}
         onClick={onDialogClick}
       >
-        <CartInner cart={data} />
+        <CartInner  />
       </dialog>
     </div>
   );
 }
 
-function CartInner(props: { cart: CartData | undefined }) {
+function CartInner() {
   const corners = "rounded(tl-2xl tr-2xl sm:(tr-none bl-2xl))";
   const card =
     `py-8 px-6 h-full bg-white ${corners} flex flex-col justify-between`;
-  const { data: cart } = useCart();
+  //const { data: cart } = useCart();
+  
 
   const checkout = (e: Event) => {
     e.preventDefault();
-    if (cart) {
-      location.href = cart.checkoutUrl;
+    if (cart.value) {
+      location.href = '/';
     }
   };
 
   const remove = (itemId: string) => {
-    if (cart) {
-      removeFromCart(cart.id, itemId);
-    }
+    removeFromCart(itemId)
   };
 
   return (
     <div class={card}>
       <div class="flex justify-between">
-        <h2 class="text-lg font-medium text-gray-900">Shopping Cart</h2>
+        <h2 class="text-lg font-medium text-gray-900">Rendelés</h2>
         <button
           class="py-1"
           onClick={(e) => {
@@ -114,49 +124,49 @@ function CartInner(props: { cart: CartData | undefined }) {
           </svg>
         </button>
       </div>
-      {props.cart && (
-        <div class="flex-grow-1 my-4">
-          {props.cart.lines.nodes.length === 0
-            ? <p class="text-gray-700">There are no items in the cart.</p>
+      {cart.value && (
+        <div class="flex-grow-1 my-4 max-h-[300px] overflow-y-scroll">
+          {cart.value.length === 0
+            ? <p class="text-gray-700">A rendelés nem tartalmaz termékeket.</p>
             : (
               <ul role="list" class="-my-6 divide-y divide-gray-200">
-                {props.cart.lines.nodes.map((line) => (
+               
+                {cart.value && cart.value && cart.value.map(product => (
                   <li class="flex py-6">
                     <div class="h-24 w-24 flex-shrink-0 overflow-hidden rounded-md border border-gray-200">
                       <img
-                        src={line.merchandise.image.url}
-                        alt={line.merchandise.image.altText ??
-                          line.merchandise.product.title}
+                        src={product.productimageurl}
+                        alt={product.name}
                         class="h-full w-full object-cover object-center"
                       />
                     </div>
                     <div class="ml-4 flex flex-1 flex-col">
                       <div>
                         <div class="flex justify-between text-base font-medium text-gray-900">
-                          <h3>{line.merchandise.product.title}</h3>
                           <p class="ml-4">
-                            {formatCurrency(line.estimatedCost.totalAmount)}
+                            {/* {formatCurrency(line.estimatedCost.totalAmount)} */}
                           </p>
                         </div>
                         <p class="mt-1 text-sm text-gray-500">
-                          {line.merchandise.title !==
-                              line.merchandise.product.title
-                            ? line.merchandise.title
-                            : ""}
+                         
                         </p>
                       </div>
                       <div class="flex flex-1 items-end justify-between text-sm">
+                        <span class="flex flex-col items-center m-2">
+                        <button class="cursor-pointer" onClick={() => changeQuantity(product.productId, 'up')}><ChevronUpCircle color="#6B7280" size={26} /></button>
                         <p class="text-gray-500">
-                          Quantity <strong>{line.quantity}</strong>
+                          Mennyiség: <strong>{product.quantity}</strong>
                         </p>
+                        <button class="cursor-pointer" onClick={() => changeQuantity(product.productId, 'down')}><ChevronDownCircle color="#6B7280" size={26} /></button>
+                        </span>
 
-                        <div class="flex">
+                        <div class="flex"> 
                           <button
                             type="button"
                             class="font-medium"
-                            onClick={() => remove(line.id)}
+                            onClick={() => remove(product.productId)}
                           >
-                            Remove
+                            Eltávolítás
                           </button>
                         </div>
                       </div>
@@ -167,28 +177,28 @@ function CartInner(props: { cart: CartData | undefined }) {
             )}
         </div>
       )}
-      {props.cart && (
+      {cart.value && (
         <div class="border-t border-gray-200 py-6 px-4 sm:px-6">
           <div class="flex justify-between text-lg font-medium">
-            <p>Subtotal</p>
-            <p>{formatCurrency(props.cart.estimatedCost.totalAmount)}</p>
+            <p>Összesen</p>
+            {/* <p>{formatCurrency(props.cart.estimatedCost.totalAmount)}</p> */}
           </div>
           <p class="mt-0.5 text-sm text-gray-500">
-            Shipping and taxes calculated at checkout.
+            Az esetleges szállítások díjakat a következő lépésben számolja a rendszer.
           </p>
           <div class="mt-6">
             <button
               type="button"
               class="w-full bg-gray-700 border border-transparent rounded-md py-3 px-8 flex items-center justify-center text-base font-medium text-white hover:bg-gray-700"
-              disabled={props.cart.lines.nodes.length === 0}
+              disabled={cart.value && cart.value.length === 0}
               onClick={checkout}
             >
-              Checkout
+              Véglegesítés
             </button>
           </div>
           <div class="mt-6 flex justify-center text-center text-sm text-gray-500">
             <p>
-              or&nbsp;
+              vagy &nbsp;
               <button
                 type="button"
                 class="font-medium"
@@ -196,7 +206,7 @@ function CartInner(props: { cart: CartData | undefined }) {
                   (e.target as HTMLButtonElement).closest("dialog")!.close();
                 }}
               >
-                Continue Shopping <span aria-hidden="true">&rarr;</span>
+                További termékek rendelése <span aria-hidden="true">&rarr;</span>
               </button>
             </p>
           </div>

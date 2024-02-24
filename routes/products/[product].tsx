@@ -1,7 +1,7 @@
 import { Handlers, PageProps } from "$fresh/server.ts";
 import { Footer } from "@/components/Footer.tsx";
 import { HeadElement } from "@/components/HeadElement.tsx";
-import { Header } from "@/components/Header.tsx";
+import { Header } from "../../islands/Header.tsx";
 import ProductDetails from "@/islands/ProductDetails.tsx";
 import { graphql } from "@/utils/shopify.ts";
 import { Product } from "@/utils/types.ts";
@@ -49,8 +49,10 @@ interface Query {
 
 export const handler: Handlers<Query> = {
   async GET(_req, ctx) {
-    const data = await graphql<Query>(q, { product: ctx.params.product });
-    if (!data.product) {
+    const productId = await ctx.params.product
+    const fetchResult = await fetch(`http://192.168.0.14:8000/getproduct?productid=${productId}`)
+    const data = await fetchResult.json()
+    if (!data.barcode) {
       return new Response("Product not found", { status: 404 });
     }
     return ctx.render(data);
@@ -60,22 +62,22 @@ export const handler: Handlers<Query> = {
 export default function ProductPage(ctx: PageProps<Query>) {
   const { data, url } = ctx;
 
-  if (!data.product) {
-    return <div>Product not found</div>;
+  if (!data.barcode) {
+    return <div>Nincs ilyen termék</div>;
   }
 
   return (
     <>
       <HeadElement
-        description={data.product.description}
-        image={data.product.featuredImage?.url}
-        title={data.product.title}
+        description='Description'
+        image={data.product_image.url}
+        title={data.name}
         url={url}
       />
 
-      <Header />
+     
       <div
-        class="w-11/12 mt-16 max-w-5xl mx-auto flex items-center justify-between relative"
+        class="w-11/12 mt-[11rem] max-w-5xl mx-auto flex items-center justify-between relative"
       >
         <a
           href="/"
@@ -93,10 +95,10 @@ export default function ProductPage(ctx: PageProps<Query>) {
               fill="currentColor"
             />
           </svg>
-          Back to shop
+          Vissza az étlaphoz
         </a>
       </div>
-      <ProductDetails product={data.product!} />
+      <ProductDetails product={data} />
       <Footer />
     </>
   );

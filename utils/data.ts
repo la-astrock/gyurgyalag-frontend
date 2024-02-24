@@ -136,9 +136,10 @@ export async function removeFromCart(cartId: string, lineItemId: string) {
 }
 
 export function formatCurrency(amount: Money) {
-  const intl = new Intl.NumberFormat("en-US", {
+  const intl = new Intl.NumberFormat("hu-HU", {
     style: "currency",
     currency: amount.currencyCode,
+    maximumSignificantDigits: 6
   });
   return intl.format(amount.amount);
 }
