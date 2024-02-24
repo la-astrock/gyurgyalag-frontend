@@ -50,7 +50,7 @@ interface Query {
 export const handler: Handlers<Query> = {
   async GET(_req, ctx) {
     const productId = await ctx.params.product
-    const fetchResult = await fetch(`http://192.168.0.14:8000/getproduct?productid=${productId}`)
+    const fetchResult = await fetch(`${Deno.env.get("PRODUCT_DETAILS_URL")}?productid=${productId}`)
     const data = await fetchResult.json()
     if (!data.barcode) {
       return new Response("Product not found", { status: 404 });
