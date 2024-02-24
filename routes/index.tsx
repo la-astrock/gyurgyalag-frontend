@@ -8,7 +8,7 @@ import { HeadElement } from "@/components/HeadElement.tsx";
 import { Header } from "../islands/Header.tsx";
 import IconCart from "@/components/IconCart.tsx";
 import { List, Product } from "../utils/types.ts";
-
+import "https://deno.land/std@0.208.0/dotenv/load.ts"
 
 const q = `{
   products(first: 20) {
@@ -40,7 +40,7 @@ interface Data {
 
 export const handler: Handlers<Data> = {
   async GET(_req, ctx) {
-    const data = await fetch('http://192.168.0.14:8000/getcategorieswithproducts')
+    const data = await fetch(Deno.env.get("PRODUCT_URL"))
     return ctx.render(await data.json());
   },
 };
